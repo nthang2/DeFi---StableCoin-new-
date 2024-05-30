@@ -962,6 +962,6 @@ contract DSCEngine is ReentrancyGuard {
         _mintDscForOwner(amountDsc);
     }
     
-// can sua lai phep tinh phan tram
+
 }
 
