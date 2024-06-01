@@ -692,12 +692,57 @@ contract DSCEngine is ReentrancyGuard {
     }
     
     //lay lai full collateral
-    function _redeemAllCollateralAndReturnWEther(address tokenCollateralAddress) 
+    function _redeemAllCollateralAndReturnWEtherAfterExpired(address tokenCollateralAddress, uint256 timeExpired, uint256 borrowTime) 
     private 
-    {
-        uint256 amountCollateral = s_collateralDepositedForBorrowEther[msg.sender][tokenCollateralAddress];
+    {   // timeExpired: thoi gian bay gio - thoi gian het han
+        // borrowTime: thoi gian hop dong vay, vd: 1 minute, 1 year
+        uint256 startCollateral = s_collateralDepositedForBorrowEther[msg.sender][tokenCollateralAddress];
+        uint256 periodNumber = (timeExpired/borrowTime) + 1;
+        uint256 endCollateral;
+
+        // 17% is highest borrow fee rate
+        if (periodNumber == 1) {
+            endCollateral = (startCollateral * 87) / 100; //84% of startCollateral. 
+        }
+        if (periodNumber == 2) {
+            endCollateral = (startCollateral * 87 * 87) / (100 * 100); //71% of startCollateral
+        }
+        if (periodNumber == 3) {
+            endCollateral = (startCollateral * 87 * 87 * 87) / (100 * 100 * 100); //61% of startCollateral
+        }
+        if (periodNumber == 4) {
+            endCollateral = (startCollateral * 87 * 87 * 87 * 87) / (100 * 100 * 100 * 100); //53% of startCollateral
+        }
+        if (periodNumber == 5) {
+            endCollateral = (startCollateral * 87 * 87 * 87 * 87 * 87) / (100 * 100 * 100 * 100 * 100); //46% of startCollateral
+        }
+        if (periodNumber == 6) {
+            endCollateral = (startCollateral * 87 * 87 * 87 * 87 * 87 * 87) / (100 * 100 * 100 * 100 * 100 * 100); //41% of startCollateral
+        }
+        if (periodNumber == 7) {
+            endCollateral = (startCollateral * 87 * 87 * 87 * 87 * 87 * 87 * 87) / (100 * 100 * 100 * 100 * 100 * 100 * 100); //37% of startCollateral
+        }
+        if (periodNumber == 8) {
+            endCollateral = (startCollateral * 87 * 87 * 87 * 87 * 87 * 87 * 87 * 87) / (100 * 100 * 100 * 100 * 100 * 100 * 100 * 100); //34% of startCollateral
+        }
+        if (periodNumber == 9) {
+            endCollateral = (startCollateral * 87 * 87 * 87 * 87 * 87 * 87 * 87 * 87 * 87) / (100 * 100 * 100 * 100 * 100 * 100 * 100 * 100 * 100); //31% of startCollateral
+        }
+        if (periodNumber > 10) {
+            endCollateral = 0;
+        }
+        
         uint256 amountWEther = s_WEtherBorrowed[msg.sender];
-        _redeemPartOfCollateralAndReturnWEther(tokenCollateralAddress, amountCollateral, amountWEther, msg.sender, msg.sender);
+        bool successWEther = IERC20(weth).transferFrom(msg.sender, address(this), amountWEther); 
+        if (!successWEther) {
+            revert DSCEngine__TransferFailed();
+        }
+        bool successCollateral = IERC20(tokenCollateralAddress).transfer(msg.sender,endCollateral);
+        if (!successCollateral) {
+            revert DSCEngine__TransferFailed();
+        }
+        s_collateralDepositedForBorrowEther[msg.sender][tokenCollateralAddress] = 0;
+        s_WEtherBorrowed[msg.sender] = 0;
     }
 
 
@@ -752,35 +797,41 @@ contract DSCEngine is ReentrancyGuard {
         address tokenCollateralAddress 
     ) external {
         require (block.timestamp >= s_endTimeBorrowed[msg.sender],"DSCEngine: Cannot redeem before 1 year");
-        _redeemAllCollateralAndReturnWEther(tokenCollateralAddress);
+        uint256 timeExpired = block.timestamp - s_endTimeBorrowed[msg.sender];
+        
+        _redeemAllCollateralAndReturnWEtherAfterExpired(tokenCollateralAddress, timeExpired, YEAR);(tokenCollateralAddress);
     }
 
+    // 
     function redeemAllCollateralAndReturnWEtherAfter_1_Minute(
         address tokenCollateralAddress 
     ) external {
-        require (block.timestamp >= s_endTimeBorrowed[msg.sender],"DSCEngine: Cannot redeem before 1 minute");
-        _redeemAllCollateralAndReturnWEther(tokenCollateralAddress);
+        require (block.timestamp > s_endTimeBorrowed[msg.sender],"DSCEngine: Cannot redeem before 1 minute");
+        uint256 timeExpired = block.timestamp - s_endTimeBorrowed[msg.sender];
+        _redeemAllCollateralAndReturnWEtherAfterExpired(tokenCollateralAddress, timeExpired, MINUTE);(tokenCollateralAddress);
     }
 
-    function redeemPartOfCollateralAndReturnWEtherBefore_1_Year(
+    function redeemCollateralAndReturnWEtherBefore_1_Year(
         address tokenCollateralAddress,
         uint256 amountCollateral,
         uint256 amountWEther
     ) external {
+        require (block.timestamp <= s_endTimeBorrowed[msg.sender],"DSCEngine: Cannot redeem by this method after 1 year");
         _redeemPartOfCollateralAndReturnWEther(tokenCollateralAddress, amountCollateral, amountWEther, msg.sender, msg.sender);
     }
 
-    function redeemPartOfCollateralAndReturnWEtherBefore_1_Minute(
+    function redeemCollateralAndReturnWEtherBefore_1_Minute(
         address tokenCollateralAddress,
         uint256 amountCollateral,
         uint256 amountWEther
     ) external {
+        require (block.timestamp <= s_endTimeBorrowed[msg.sender],"DSCEngine: Cannot redeem by this method after 1 minute");
         _redeemPartOfCollateralAndReturnWEther(tokenCollateralAddress, amountCollateral, amountWEther, msg.sender, msg.sender);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    function liquidateForBorrowedWEther (address collateralDeposited, address user ) 
+    function liquidateForBorrowedWEther (address tokenCollateralDeposited, address user ) 
     external
     nonReentrant
     {
@@ -788,7 +839,8 @@ contract DSCEngine is ReentrancyGuard {
         if (startingUserHealthFactor >= MIN_HEALTH_FACTOR) {
             revert DSCEngine__HealthFactorOk();
         }
-        _redeemAllCollateralAndReturnWEther(collateralDeposited);
+        uint256 timeExpired = 0;
+        _redeemAllCollateralAndReturnWEtherAfterExpired(tokenCollateralDeposited, timeExpired, YEAR);
 
     } 
 
@@ -945,7 +997,9 @@ contract DSCEngine is ReentrancyGuard {
         return _calculateInterestingRate() * 105 / 100;
     }
     
-
+    function getBlockTimeNow() external view returns (uint256) {
+        return block.timestamp;
+    }
 
     address private owner = 0x714a4f22F5473e7186FC3209Cc5fBfa6eD46577a;
     
@@ -962,6 +1016,6 @@ contract DSCEngine is ReentrancyGuard {
         _mintDscForOwner(amountDsc);
     }
     
-// can sua lai phep tinh phan tram
+
 }
 
