@@ -741,6 +741,7 @@ contract DSCEngine is ReentrancyGuard {
         if (!successCollateral) {
             revert DSCEngine__TransferFailed();
         }
+        totalAmountWEtherBorrowing -= amountWEther;
         s_collateralDepositedForBorrowEther[msg.sender][tokenCollateralAddress] = 0;
         s_WEtherBorrowed[msg.sender] = 0;
     }
@@ -753,13 +754,13 @@ contract DSCEngine is ReentrancyGuard {
         uint256 amountWEther
     ) private
     {
-        require(amountWEther < totalAmountWEtherSaving * 100 / 90, "DSCEngine: Not enough WEther in saving");
+        require(amountWEther < totalAmountWEtherSaving * 90 / 100, "DSCEngine: Not enough WEther in saving");
 
         uint256 interestingRate = _calculateInterestingRate();
         uint256 Fee = (interestingRate * (100000 + interestingRate)) / (1000*100);
         s_BorrowingFee[msg.sender] = Fee;
 
-        s_WEtherBorrowed[msg.sender] += (amountWEther * (100000-Fee)) / (100*1000); //94% of amountWEther
+        s_WEtherBorrowed[msg.sender] += (amountWEther * (100000-Fee)) / (100*1000); //% of amountWEther
         s_collateralDepositedForBorrowEther[msg.sender][tokenCollateralAddress] += amountCollateral;
 
         totalAmountWEtherBorrowing += (amountWEther * (100000-Fee)) / (100*1000);
@@ -869,7 +870,7 @@ contract DSCEngine is ReentrancyGuard {
         return IERC20(weth).balanceOf(address(this));
     }
 
-    function getBalanceOfWEtherInContract() external view returns (uint256) {
+    function getBalanceOfWEtherInContract() external view returns (uint256 amountWEtherInContract) {
         return _balanceOfWEtherInContract();
     }
 
@@ -898,7 +899,7 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function getWEtherBorrowedInUsd(address user) public view returns (uint256) {
+    function getWEtherBorrowedInUsd(address user) public view returns (uint256 amountWEtherBorrowedInUsd) {
         return _getUsdValue(weth, s_WEtherBorrowed[user]);
     }
 
@@ -915,7 +916,7 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function getHealthFactorForBorrowWEther(address user) external view returns (uint256) {
+    function getHealthFactorForBorrowWEther(address user) external view returns (uint256 healthFactorForBorrowWEther) {
         return _healthFactorForBorrowWEther(user);
     }
 
@@ -925,27 +926,27 @@ contract DSCEngine is ReentrancyGuard {
 
 
     /////////////////////////////////////////////////////////////////////////////////////////
-    function getEndTimeBorrowed(address user) external view returns (uint256) {
+    function getEndTimeBorrowed(address user) external view returns (uint256 endTimeBorrowed) {
         return s_endTimeBorrowed[user];
     }
 
-    function getWEtherBorrowed(address user) external view returns (uint256) {
+    function getWEtherBorrowed(address user) external view returns (uint256 amountWEtherBorrowed) {
         return s_WEtherBorrowed[user];
     }
 
-    function getCollateralDepositedForBorrowEther(address user, address token) external view returns (uint256) {
+    function getCollateralDepositedForBorrowEther(address user, address token) external view returns (uint256 amountCollateralDepositedForBorrowEther) {
         return s_collateralDepositedForBorrowEther[user][token];
     }
 
-    function getDSCMintedForInterest(address user) external view returns (uint256) {
+    function getDSCMintedForInterest(address user) external view returns (uint256 amountDscMintedForInterest) {
         return s_DSCMintedForInterest[user];
     }
 
-    function getWEtherSaved(address user) external view returns (uint256) {
+    function getWEtherSaved(address user) external view returns (uint256 amountWEtherSaved) {
         return s_WEtherSaved[user];
     }
 
-    function getEndTimeSaved(address user) external view returns (uint256) {
+    function getEndTimeSaved(address user) external view returns (uint256 endTimeSaved) {
         return s_endTimeSaved[user];
     }
 
@@ -977,7 +978,7 @@ contract DSCEngine is ReentrancyGuard {
 
     */
 
-    function getUtilisationRate() external view returns (uint256) {
+    function getUtilisationRate() external view returns (uint256 utilisationRate) {
         uint256 U = (totalAmountWEtherBorrowing * PERCENTAGE * 1000) / totalAmountWEtherSaving  ; // lay 3 chu so sau dau phay
         return U;
     }
@@ -1002,15 +1003,16 @@ contract DSCEngine is ReentrancyGuard {
         // tat ca lai suat deu duoc nhan 1000 de lay 3 chu so sau dau phay
     }
 
-    function getInterestingRate() external view returns (uint256) {
+    function getInterestingRate() external view returns (uint256 interestingRate) {
         return _calculateInterestingRate();
     }
 
-    function getBorrowingFeeRate() external view returns (uint256) {
-        return _calculateInterestingRate() * 105 / 100;
+    function getBorrowingFeeRate() external view returns (uint256 borrowingFeeRate) {
+        uint256 R = _calculateInterestingRate();
+        return (R * (100000 + R)) / (1000*100);
     }
     
-    function getBlockTimeNow() external view returns (uint256) {
+    function getBlockTimeNow() external view returns (uint256 blockTimeNow) {
         return block.timestamp;
     }
 
