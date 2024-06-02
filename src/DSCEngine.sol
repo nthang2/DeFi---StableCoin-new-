@@ -650,7 +650,7 @@ contract DSCEngine is ReentrancyGuard {
     {
         uint256 R = s_InterestingRate[msg.sender];
         redeemSavedWEtherAfter_1_Year(amount);
-        mintDSCForInterest((_getUsdValue(weth, amount)) * R / (1000*100)); // get 5% for interest in DSC after 1 year
+        mintDSCForInterest((_getUsdValue(weth, amount)) * R / (1000*100)); // *1000 vi R co 3 chu so sau dau phay
     } 
 
     function redeemSavedWEtherAfter_1_MinuteAndMintDscForInterest(uint256 amount) 
@@ -661,7 +661,7 @@ contract DSCEngine is ReentrancyGuard {
         uint256 R = s_InterestingRate[msg.sender];
         require(block.timestamp >= s_endTimeSaved[msg.sender],"DSCEngine: Cannot redeem before 1 minute");
         redeemSavedWEther(amount);
-        mintDSCForInterest((_getUsdValue(weth, amount)) * R / (1000*100)); // get 5% for interest in DSC after 1 minute
+        mintDSCForInterest((_getUsdValue(weth, amount)) * R / (1000*100)); // *1000 vi R co 3 chu so sau dau phay
     }
     /////////////////////////////////////////////////////////////////////////////////////////
 
