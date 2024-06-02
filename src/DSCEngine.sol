@@ -765,10 +765,23 @@ contract DSCEngine is ReentrancyGuard {
         totalAmountWEtherBorrowing += (amountWEther * (100000-Fee)) / (100*1000);
 
         revertIfHealthFactorForBorrowWEtherIsBroken(msg.sender); //check health factor
-        depositCollateral(tokenCollateralAddress, amountCollateral); //deposit collateral
+        //deposit collateral
+        emit CollateralDeposited(
+            msg.sender,
+            tokenCollateralAddress,
+            amountCollateral
+        );
+        bool success_deposit = IERC20(tokenCollateralAddress).transferFrom(
+            msg.sender,
+            address(this),
+            amountCollateral
+        );
+        if (!success_deposit) {
+            revert DSCEngine__TransferFailed();
+        }
         revertIfHealthFactorIsBroken(msg.sender);
-        bool success = IERC20(weth).transfer(msg.sender, (amountWEther * 94) / 100); //
-        if (!success) {
+        bool success_borrow = IERC20(weth).transfer(msg.sender, (amountWEther * 94) / 100); //
+        if (!success_borrow) {
             revert DSCEngine__TransferFailed();
         }
     }
