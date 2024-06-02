@@ -1,6 +1,6 @@
-# Foundry DeFi Stablecoin
+# DeFi Stablecoin
 
-This is a section of the Cyfrin Foundry Solidity Course.
+Smart contract on sepolia.etherscan.io
 
 [DSCEngine Example](https://sepolia.etherscan.io/address/0x7dB748110aBBaC375fAC4730061Cd5244D4e48bF)
 [Decentralized Stablecoin Example](https://sepolia.etherscan.io/address/)
@@ -55,11 +55,6 @@ cast send 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 "approve(address,uint256)" 
 cast send 0x7dB748110aBBaC375fAC4730061Cd5244D4e48bF "depositCollateralAndMintDsc(address,uint256,uint256)" 0xdd13E55209Fd76AfE204dBda4007C227904f0a81 100000000000000000 10000000000000000 --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
 ```
 
-# Slither
-
-```
-slither :; slither . --config-file slither.config.json
-```
 
 # Thank you!
 
